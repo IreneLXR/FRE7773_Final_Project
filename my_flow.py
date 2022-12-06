@@ -18,6 +18,7 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -32,15 +33,8 @@ def rmspe(y_true, y_pred):
 def feval_rmspe(preds, train_data):
     labels = train_data.get_label()
     return 'RMSPE', round(rmspe(y_true = labels, y_pred = preds),5), False
-
 class Neighbors:
     def __init__(self, name: str, n_neighbor: int, pivot: pd.DataFrame, X_train: pd.DataFrame):
-        '''
-        name: name of the neighbor
-        n_neighbor: max number of neighbors can be selected
-        pivot: DataFrame that contains timeid, stockid and features value as value
-        X_train: DataFrame that contains all the feature
-        '''
         self.features = pd.DataFrame()
         self.name = name
         self.n_neighbor = n_neighbor
@@ -51,14 +45,7 @@ class Neighbors:
         self.time = X_train.time_id.factorize()[0]
         self.stock = X_train.stock_id.factorize()[0]  
     
-    def make_nn_features(self, n: int, col: str, features: pd.DataFrame, method=np.mean) -> None:
-        '''
-        Construct neighbor's feature for a given colume, method, and number of neighbors
-        Must run make_nn_time or make_nn_stock before this.
-        n: number of neighbors to select and calculate
-        col: name of neighbor's feature
-        method: function to calculate properties of neighbors, default to calculate mean
-        '''
+    def make_nn_features(self, n: int, col: str, features: pd.DataFrame, method=np.mean):
         assert(self.features is not None)
 
         self.agg = pd.DataFrame(
@@ -67,25 +54,14 @@ class Neighbors:
         )
     
 class TimeNeighbors(Neighbors):
-
-    def make_nn_time(self, pivot: pd.DataFrame, feature_col: str)-> None:
-        '''
-        Find values in each neighbor for a specific feature
-        pivot: DataFrame that contains timeid, stockid and features value as value
-        feature_col: name of the feature that we want to extract from neighbors
-        '''        
+    def make_nn_time(self, pivot: pd.DataFrame, feature_col: str):
         pivot = pivot.pivot('time_id', 'stock_id', feature_col)
         pivot = pivot.fillna(pivot.mean())
         self.features = pd.DataFrame(pivot.values[self.nn_ind[self.time, 1:self.n_neighbor], self.stock[:, None]])
         self.col = feature_col
 
-class StockNeighbors(Neighbors):
-    def make_nn_stock(self, pivot: pd.DataFrame, feature_col: str) -> None:
-        '''
-        Find values in each neighbor for a specific feature
-        pivot: DataFrame that contains timeid, stockid and features value as value
-        feature_col: name of the feature that we want to extract from neighbors
-        '''        
+class StockNeighbors(Neighbors):        
+    def make_nn_stock(self, pivot: pd.DataFrame, feature_col: str):
         pivot = pivot.pivot('time_id', 'stock_id', feature_col)
         pivot = pivot.fillna(pivot.mean())
         self.features = pd.DataFrame(pivot.T.values[self.nn_ind[self.stock, 1:self.n_neighbor], self.time[:, None]])
@@ -134,30 +110,27 @@ class MyFlow(FlowSpec):
         """
         from io import StringIO
         # load train file
-        self.train = pd.read_csv('train.csv')
+        self.train = pd.read_csv('./data/train.csv')
         print(self.train.shape)
         self.stock_ids = list(set(self.train['stock_id']))
-        #self.stock_ids = self.stock_ids[:10]
+        self.stock_ids = self.stock_ids[:10]
         print(self.stock_ids)
         # load preprocessed data file (~30minutes of preprocessing)
-        self.df = pd.read_csv('feature_v2.csv', index_col=[0])
+        self.df = pd.read_csv('./df_v1.csv', index_col=[0])
         print(self.df.shape)
         self.time_ids = self.df.time_id.factorize()[1]
-        #time_len = len(self.time_ids)
-        #html_time = 0.1
-        #train_time = self.time_ids[int((1 - html_time) * time_len)]
         self.X_train = self.df.copy()
         self.X_train['target'] = self.train.target
-        #print(self.X_train['target'])
         # go to the next step
+        import gc
+        gc.collect()
+        del self.train
         self.next(self.make_nn_features)
     @step
     def make_nn_features(self):
         from sklearn.preprocessing import minmax_scale
-        print('making_nn_features')
         time_neighbor = []
         stock_neighbor = []
-        #make time neighbor based on volatility, trading volume, and return
         pv = self.X_train.copy()
         pivot = pv.pivot('time_id','stock_id','book_log_return1_realized_volatility')
         pivot = pivot.fillna(pivot.mean())
@@ -179,7 +152,6 @@ class MyFlow(FlowSpec):
         pivot = pd.DataFrame(minmax_scale(pivot))
         time_neighbor.append(TimeNeighbors('time_order_count_mean', 4, pivot, self.X_train))
 
-        #make stock neighbor based on volatility and return
         pivot = pv.pivot('time_id','stock_id','book_log_return1_realized_volatility')
         pivot = pivot.fillna(pivot.mean())
         pivot = pd.DataFrame(minmax_scale(pivot))
@@ -193,8 +165,6 @@ class MyFlow(FlowSpec):
         self.df_nn = self.X_train.copy()
         #print("df")
         #print(self.df['target'])
-
-        #aggregate features according to different features, functions, and number of neighbors
         methods_stocks = {
             'book_log_return1_realized_volatility': [np.mean, np.min, np.max, np.std],
             'trade_order_count_mean': [np.mean],
@@ -238,16 +208,18 @@ class MyFlow(FlowSpec):
         for i in range(len(self.df_nn.columns)):
             if self.df_nn.columns[i] == 'target':
                 print("target!!!!!!!!!!!!!!!!!!!!!")
-        #self.df_nn = pd.read_csv('./df_nn.csv')
+        print(self.df_nn.columns)
+        print(self.df_nn.shape)
+        print(self.df_nn.shape)
         self.df_nn = self.df_nn.fillna(self.df_nn.mean())
+        del pv
+        del self.X_train
         self.next(self.prepare_train_and_test_dataset)
 
     @step
     def prepare_train_and_test_dataset(self):
-        print('preparing train dataset')
         from sklearn.model_selection import train_test_split
 
-        #cross validation split based on time id
         fold_bolder = [3830 - 383 * 5, 3830 - 383 * 4,3830 - 383 * 3,3830 - 383 * 2,3830 - 383 * 1,]
         self.fold = []
         self.df_nn = self.df_nn.sort_values(by = ['time_id', 'stock_id'])
@@ -259,14 +231,13 @@ class MyFlow(FlowSpec):
             self.fold.append((ind_train, ind_valid))
         self.df_train = self.df_nn[self.df_nn.index <= self.fold[-1][0][-1]]
         self.df_test = self.df_nn[self.df_nn.index > self.fold[-1][0][-1]]
-        #self.df_train = pd.read_csv('./df_train.csv')
-        #self.df_test = pd.read_csv('./df_test.csv')
-        print(self.df_train.shape)
         self.X = self.df_train[[col for col in self.df_train.columns if col not in ['target','time_id','stock_id','level_0','index']]]
         self.y = self.df_train['target']
         self.X_test = self.df_test[[col for col in self.df_test.columns if col not in ['target','time_id','stock_id','level_0','index']]]
         self.y_test = self.df_test['target']
         print(self.y.head())
+        
+        del self.df_nn
         self.next(self.set_params)
     @step
     def set_params(self):
@@ -281,6 +252,18 @@ class MyFlow(FlowSpec):
             'num_leaves': 128,
             'colsample_bytree': 0.3,
             'learning_rate': 0.3
+            },
+            {
+            'objective': 'regression',
+            'verbose': -1,
+            'metric': 'None',
+            'reg_alpha': 5,
+            'reg_lambda': 5,
+            'min_data_in_leaf': 256,
+            'max_depth': 8,
+            'num_leaves': 800,
+            'colsample_bytree': 0.3,
+            'learning_rate': 0.01
             },
             {
             'objective': 'regression',
@@ -305,19 +288,6 @@ class MyFlow(FlowSpec):
             'num_leaves': 1000,
             'colsample_bytree': 0.2,
             'learning_rate': 0.1
-            },
-            
-            {
-            'objective': 'regression',
-            'verbose': -1,
-            'metric': 'None',
-            'reg_alpha': 5,
-            'reg_lambda': 5,
-            'min_data_in_leaf': 256,
-            'max_depth': 8,
-            'num_leaves': 800,
-            'colsample_bytree': 0.3,
-            'learning_rate': 0.01
             },
         ]
         self.next(self.train_model, foreach='params')
@@ -348,13 +318,13 @@ class MyFlow(FlowSpec):
                           train_set = train_dataset, 
                           valid_sets = [train_dataset, val_dataset], 
                           verbose_eval = 250,
-                          early_stopping_rounds=500,
+                          early_stopping_rounds=50,
                           feval = feval_rmspe)
         # Add predictions to the out of folds array
         ypred = model.predict(x_val)
         rmspe_score = rmspe(y_val, ypred)
         print(f'Our out of folds RMSPE is {rmspe_score}')
-        self.train_val_result = {"RMSPE": rmspe_score, "model": model,"param":self.param, "X_test": self.X_test, "y_test": self.y_test}
+        self.train_val_result = {"RMSPE": rmspe_score, "model": model,"param":self.param, "X_test": self.X_test, "y_test": self.y_test, "df_test": self.df_test}
         self.next(self.join)
 
     @step
@@ -365,12 +335,14 @@ class MyFlow(FlowSpec):
         self.best_lgb_model = self.best_model["model"]
         self.X_test = self.best_model['X_test']
         self.y_test = self.best_model['y_test']
+        self.df_test = self.best_model['df_test']
         self.next(self.test_model)
     @step 
     def test_model(self):
         """
         Test the model on the hold out sample
         """
+        self.df_test_group_by_stock = self.df_test.groupby('stock_id')
         self.y_pred = self.best_lgb_model.predict(self.X_test, num_iteration=self.best_lgb_model.best_iteration)
         print(f"# RMSPE: {np.sqrt(np.mean(np.square((self.y_test - self.y_pred) / self.y_test)))}")                    
         self.next(self.end)

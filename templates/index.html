@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ project }} app</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        body {
+            font-size: 24px;
+        }
+        .container {
+        }
+        .field {
+        }
+        .field input.myclass {
+            text-align: center;
+            display: inline-block;
+            height: 48px;
+            width: 60px;
+            font-size: 16px;
+            padding: 12px 28px;
+            border-radius: 15px;
+        }
+        .button { 
+            text-align: center;
+            display: inline-block;
+            font-size: 16px;
+            padding: 12px 28px;
+            border-radius: 15px;
+            transition-duration: 0.4s;
+        }
+        .button1 {
+            background-color: rgb(76, 175, 80); 
+            color: white;
+            border-color: rgb(76, 175, 80);
+        }
+        .button1:hover {
+            background-color: rgb(59, 139, 75); /* Green */
+            color: white;
+        }
+    </style>
+</head>
+<script type="text/javascript">
+
+    $(function() {
+        $('#predict').click(function() {
+            var ele_id = document.getElementById("input_id");
+            var ele_time = document.getElementById("input_time");
+            var value_id = ele_id.value;
+            var value_time = ele_time.value;
+            let value = {
+                "id": value_id,
+                "time": value_time
+            }
+            console.log(value);
+            event.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '/',
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify(value),
+                dataType: 'json',
+            }).done(function(data){
+                console.log(data);
+                $('#y').text(data.y_at_time);
+                $('#rmspe').text(data.rmspe);
+                $('#myImage').attr("src", data.img_path);
+            }).fail(function(data){
+                alert('error!');
+            });
+        });
+    }); 
+
+</script>
+<body>
+    <h1>{{ project }}</h1>
+        <div class="container">
+            <div class="field">
+                <label for="stock_id"><b>please input stock id: </b></label>
+                <input class="myinput" id="input_id" type="number" placeholder="0 - 9" name="stock_id" required/>
+            </div>
+            <div class="field">
+                <label for="time_id"><b>please input time id: </b></label>
+                <input class="myinput" id="input_time" type="number" placeholder="0 - 382" name="time_id" required/>
+            </div>
+            <button id="predict" class="button button1">Predict Volatility</button>
+        </div>
+    <h2 id="y"></h2>
+    <img id="myImage"/>
+    <h2 id="rmspe"></h2>
+</body>
+</html>
