@@ -15,7 +15,6 @@ MAKE SURE TO RUN THIS WITH METAFLOW LOCAL FIRST
 from metaflow import FlowSpec, step, Parameter, IncludeFile, current
 from datetime import datetime
 import os
-import glob
 import pandas as pd
 import numpy as np
 import seaborn as sns
