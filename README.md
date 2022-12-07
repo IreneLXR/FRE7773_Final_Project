@@ -1,6 +1,6 @@
 # Project Title
 
-FRE7773 - Final Project - Optiver Volatility Prediction
+FRE7773 - Final Project - Kaggle: Optiver Volatility Prediction
 
 ## Description
 
