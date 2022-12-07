@@ -1,6 +1,6 @@
 # Project Title
 
-Simple overview of use/purpose.
+FRE7773 - Final Project - Optiver Volatility Prediction
 
 ## Description
 
