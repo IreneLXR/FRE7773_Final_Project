@@ -245,7 +245,7 @@ class MyFlow(FlowSpec):
         """
         Tune hyperparameters
         """
-        self.params = [0.01, 0.2, 0.5]
+        self.params = [0.01, 0.2]
         self.next(self.train_model, foreach='params')
     @step
     def train_model(self):
