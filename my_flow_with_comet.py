@@ -118,7 +118,7 @@ class MyFlow(FlowSpec):
         self.stock_ids = list(set(self.train['stock_id']))
         self.stock_ids = self.stock_ids[:10]
         # load preprocessed data file (~30minutes of preprocessing)
-        self.df = pd.read_csv('./df.csv', index_col=[0])
+        self.df = pd.read_csv('./data/df.csv', index_col=[0])
         self.time_ids = self.df.time_id.factorize()[1]
         self.X_train = self.df.copy()
         self.X_train['target'] = self.train.target
