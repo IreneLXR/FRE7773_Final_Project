@@ -4,7 +4,7 @@ FRE7773 - Final Project - Kaggle: Optiver Volatility Prediction
 
 ## Description
 
-An in-depth paragraph about your project and overview of use.
+Volatility describes fluctuations in prices of securities in the financial markets. It is of great importance for both individual and institutional investors, for giving them guidance on different securities' risk characteristics, thus helping them make judicious and appropriate investing decisions based on their unique risk preferences. In our Machine Learning project, we built models to predict 112 stocks' realized volatility over a 10-minute time window across different market sectors.
 
 ## Getting Started
 
@@ -26,31 +26,12 @@ An in-depth paragraph about your project and overview of use.
 code blocks for commands
 ```
 
-## Help
-
-Any advise for common problems or issues.
-```
-command to run if program contains helper info
-```
-
 ## Authors
 
 Contributors names and contact info
 
 ex. Dominique Pizzie  
 ex. [@DomPizzie](https://twitter.com/dompizzie)
-
-## Version History
-
-* 0.2
-    * Various bug fixes and optimizations
-    * See [commit change]() or See [release history]()
-* 0.1
-    * Initial Release
-
-## License
-
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
 
 ## Acknowledgments
 
