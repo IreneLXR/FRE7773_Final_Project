@@ -1,3 +1,9 @@
-feature_v2.csv
 data/df.csv
 data/train.csv
+
+#data file
+*.parquet
+*.csv
+
+#metaflow file
+.metaflow

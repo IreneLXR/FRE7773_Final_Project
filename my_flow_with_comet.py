@@ -21,16 +21,16 @@ import comet_ml
 from sklearn.neighbors import NearestNeighbors
 
 # MAKE SURE THESE VARIABLES HAVE BEEN SET
-os.environ['COMET_API_KEY']="APhJUciWYinYwUTCb8VlyRWGG"
-os.environ['MY_PROJECT_NAME'] = "fre7773-final-project"
+os.environ['COMET_API_KEY']="BiFnq5zTOzwmQb2ZNMsJdAVUP"
+os.environ['MY_PROJECT_NAME'] = "finalproject7773-yu-gu"
 assert 'COMET_API_KEY' in os.environ and os.environ['COMET_API_KEY']
 assert 'MY_PROJECT_NAME' in os.environ and os.environ['MY_PROJECT_NAME']
 print("Running experiment for project: {}".format(os.environ['MY_PROJECT_NAME']))
 
 # Create an experiment with your api key
 experiment = Experiment(
-    api_key="APhJUciWYinYwUTCb8VlyRWGG",
-    project_name="fre7773-final-project",
+    api_key="BiFnq5zTOzwmQb2ZNMsJdAVUP",
+    project_name="finalproject7773-yu-gu",
     workspace="nyu-fre-7773-2021",
 )
 
@@ -245,7 +245,7 @@ class MyFlow(FlowSpec):
         """
         Tune hyperparameters
         """
-        self.params = [0.01, 0.2, 0.3, 0.5]
+        self.params = [0.01, 0.2, 0.5]
         self.next(self.train_model, foreach='params')
     @step
     def train_model(self):
