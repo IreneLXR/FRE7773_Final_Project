@@ -19,6 +19,9 @@ Volatility describes fluctuations in prices of securities in the financial marke
 ### Executing program
 
 * Make sure all packages in requirements.txt are installed to the correct version
+```
+pip install -r requirements.txt
+```
 * Run my_flow.py under the right directory
 ```
 python3 my_flow.py run
