@@ -1,6 +1,4 @@
-# Project Title
-
-FRE7773 - Final Project - Kaggle: Optiver Volatility Prediction
+# FRE7773 - Final Project - Kaggle: Optiver Volatility Prediction
 
 ## Description
 
@@ -29,9 +27,9 @@ python3 my_flow.py run
 
 ## Authors
 
-[@HelenZhang00](https://github.com/HelenZhang00)
-[@IreneLXR](https://github.com/IreneLXR)
-[@guyuuuuu](https://github.com/guyuuuuu)
+Helen Zhang [@HelenZhang00](https://github.com/HelenZhang00)  
+Layla Li [@IreneLXR](https://github.com/IreneLXR)  
+Yu Gu[@guyuuuuu](https://github.com/guyuuuuu)
 
 ## Acknowledgments
 
