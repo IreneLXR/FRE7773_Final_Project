@@ -14,6 +14,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from flask import jsonify
 import os
+import pickle
 #### THIS IS GLOBAL, SO OBJECTS LIKE THE MODEL CAN BE RE-USED ACROSS REQUESTS ####
 
 FLOW_NAME = 'MyFlow' # name of the target class that generated the model
@@ -40,12 +41,14 @@ def process_data(_x: int, time: int):
     X_test_stock_id_x = df_stock_id_x[[col for col in df_stock_id_x.columns if col not in ['target','time_id','stock_id','level_0','index']]]
     y_test_stock_id_x = df_stock_id_x['target']
     y_pred = latest_model.predict(X_test_stock_id_x)
-    rmspe_x = rmspe(y_test_stock_id_x, y_pred)
+    rmspe_x = round(rmspe(y_test_stock_id_x, y_pred), 5)
     
     # draw graph
     y_pred = pd.Series(y_pred, y_test_stock_id_x.index)
     y_pred_series = pd.Series(y_pred, y_test_stock_id_x.index)
-    y_at_time = y_pred_series.iloc[time]
+    y_at_time = round(y_pred_series.iloc[time], 5)
+    df_stock_id_x['time_id'] = df_stock_id_x['time_id'] - df_stock_id_x['time_id'].values[0]
+    print(df_stock_id_x['time_id'])
     plt.plot(df_stock_id_x['time_id'], y_test_stock_id_x, 'b', zorder=1)
     plt.plot(df_stock_id_x['time_id'], y_pred_series, color='orange', zorder=2)
     plt.scatter(df_stock_id_x['time_id'][y_pred_series.index[time]], y_at_time, marker='X', c='red', s=100, zorder=3)
