@@ -12,11 +12,11 @@ Volatility describes fluctuations in prices of securities in the financial marke
 
 ### Installing
 
-* Whole program can be accessed at https://github.com/IreneLXR/FRE7773_Final_Project
+* Whole project can be accessed at https://github.com/IreneLXR/FRE7773_Final_Project
 * Raw data from kaggle can be downloaded at https://www.kaggle.com/competitions/optiver-realized-volatility-prediction/data
 * Download engineered data at ______, put the data in to /data folder
 
-### Executing program
+### Executing Project
 
 * Make sure all packages in requirements.txt are installed to the correct version
 ```
