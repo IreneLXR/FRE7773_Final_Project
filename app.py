@@ -23,19 +23,26 @@ metadata('./')
 # Fetch currently configured metadata provider to check it's local!
 print(get_metadata())
 
-def rmspe(y_true, y_pred):
-    return np.sqrt(np.mean(np.square((y_true - y_pred) / y_true)))
+# get latest successful run from metadata
 def get_latest_successful_run(flow_name: str):
     "Gets the latest successfull run."
     for r in Flow(flow_name).runs():
         if r.successful: 
             return r
+# calculate errors      
+def rmspe(y_true, y_pred):
+    return np.sqrt(np.mean(np.square((y_true - y_pred) / y_true)))
+
+# generate future volatility trend graph and the specific volatilty at a point based on stock id and time id
 def process_data(_x: int, time: int):
+    # group data by stock id to make prediction
     df_stock_id_x = latest_df_test.get_group(_x).apply(lambda x: x) 
     X_test_stock_id_x = df_stock_id_x[[col for col in df_stock_id_x.columns if col not in ['target','time_id','stock_id','level_0','index']]]
     y_test_stock_id_x = df_stock_id_x['target']
     y_pred = latest_model.predict(X_test_stock_id_x)
     rmspe_x = rmspe(y_test_stock_id_x, y_pred)
+    
+    # draw graph
     y_pred = pd.Series(y_pred, y_test_stock_id_x.index)
     y_pred_series = pd.Series(y_pred, y_test_stock_id_x.index)
     y_at_time = y_pred_series.iloc[time]
@@ -44,6 +51,9 @@ def process_data(_x: int, time: int):
     plt.scatter(df_stock_id_x['time_id'][y_pred_series.index[time]], y_at_time, marker='X', c='red', s=100, zorder=3)
     classes = ['volatility_true', 'volatility_predict', 'volatility_at_time_' + str(time)]
     plt.legend(labels=classes)
+    # if static dir does not exist, mkdir
+    if os.path.isdir('./static') == False:
+        os.mkdir('./static')
     plt.savefig('./static/stock_id_' + str(_x) + '_time_id_' + str(time) + '.png')
     plt.close()
     img_path = '/static/stock_id_' + str(_x) + '_time_id_' + str(time) + '.png'
@@ -79,12 +89,8 @@ def main():
 @app.route('/predict', methods=['GET'])
 def predict():
     if request.method=='GET':
-        #request_dict = request.args.to_dict()
-        #print(request_dict)
         stock_id = int(request.args.get('stock_id'))
-        print(stock_id)
         time_id = int(request.args.get('time_id'))
-        print(time_id)
         img_path, rmspe_x, y_pred, y_at_time = process_data(stock_id, time_id)
         predict_dict = {
             "data": {
