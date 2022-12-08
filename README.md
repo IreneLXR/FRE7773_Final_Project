@@ -10,28 +10,28 @@ Volatility describes fluctuations in prices of securities in the financial marke
 
 ### Dependencies
 
-* Describe any prerequisites, libraries, OS version, etc., needed before installing program.
-* ex. Windows 10
+* OS, Linux System
 
 ### Installing
 
-* How/where to download your program
-* Any modifications needed to be made to files/folders
+* Whole program can be accessed at https://github.com/IreneLXR/FRE7773_Final_Project
+* Raw data from kaggle can be downloaded at https://www.kaggle.com/competitions/optiver-realized-volatility-prediction/data
+* Download engineered data at ______, put the data in to /data folder
 
 ### Executing program
 
-* How to run the program
-* Step-by-step bullets
+* Make sure all packages in requirements.txt are installed to the correct version
+* Run my_flow.py under the right directory
 ```
-code blocks for commands
+python3 my_flow.py run
 ```
+* Run model_selection.ipynb to get the overview of the pipeline of the project
 
 ## Authors
 
-Contributors names and contact info
-
-ex. Dominique Pizzie  
-ex. [@DomPizzie](https://twitter.com/dompizzie)
+[@HelenZhang00](https://github.com/HelenZhang00)
+[@IreneLXR](https://github.com/IreneLXR)
+[@guyuuuuu](https://github.com/guyuuuuu)
 
 ## Acknowledgments
 
