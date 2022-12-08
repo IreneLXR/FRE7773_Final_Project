@@ -61,7 +61,7 @@
                 dataType: 'json',
             }).done(function(data){
                 console.log(data);
-                $('#y').text(data.y_at_time);
+                $('#volatility').text(data.y_at_time);
                 $('#rmspe').text(data.rmspe);
                 $('#myImage').attr("src", data.img_path);
             }).fail(function(data){
@@ -82,9 +82,11 @@
                 <label for="time_id"><b>please input time id: </b></label>
                 <input class="myinput" id="input_time" type="number" placeholder="0 - 382" name="time_id" required/>
             </div>
-            <button id="predict" class="button button1">Predict Volatility</button>
+            <div class="field">
+                <button id="predict" class="button button1">Predict Volatility</button>
+            </div>
         </div>
-    <h2 id="y"></h2>
+    <h2 id="volatility"></h2>
     <img id="myImage"/>
     <h2 id="rmspe"></h2>
 </body>
