@@ -22,9 +22,13 @@ Volatility describes fluctuations in prices of securities in the financial marke
 ```
 pip install -r requirements.txt
 ```
-* Run my_flow.py under the right directory
+* Run my_flow.py under the right directory to generate the metadata folder
 ```
 python3 my_flow.py run
+```
+* After running my_flow.py, run app.py to generate a web application that allows users to input stock id and time id to make a prediction on volatility
+```
+python3 app.py run
 ```
 * Run model_selection.ipynb to get the overview of the pipeline of the project
 
@@ -32,7 +36,7 @@ python3 my_flow.py run
 
 Helen Zhang [@HelenZhang00](https://github.com/HelenZhang00)  
 Layla Li [@IreneLXR](https://github.com/IreneLXR)  
-Yu Gu[@guyuuuuu](https://github.com/guyuuuuu)
+Yu Gu [@guyuuuuu](https://github.com/guyuuuuu)
 
 ## Acknowledgments
 
