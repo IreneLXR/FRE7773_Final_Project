@@ -48,7 +48,6 @@ def process_data(_x: int, time: int):
     y_pred_series = pd.Series(y_pred, y_test_stock_id_x.index)
     y_at_time = round(y_pred_series.iloc[time], 5)
     df_stock_id_x['time_id'] = df_stock_id_x['time_id'] - df_stock_id_x['time_id'].values[0]
-    print(df_stock_id_x['time_id'])
     plt.plot(df_stock_id_x['time_id'], y_test_stock_id_x, 'b', zorder=1)
     plt.plot(df_stock_id_x['time_id'], y_pred_series, color='orange', zorder=2)
     plt.scatter(df_stock_id_x['time_id'][y_pred_series.index[time]], y_at_time, marker='X', c='red', s=100, zorder=3)
@@ -81,18 +80,19 @@ def main():
   if request.method=='POST':
     data = request.get_json()
     print(data)
-    _id = data["id"]
-    _id = int(_id)
+    _idx = data["id"]
+    _idx = int(_idx)
+    _id = latest_run.data.total_stock_ids[_idx]
     _time = data["time"]
     _time = int(_time)
-    print(_time)
     img_path, rmspe_x, _, y_at_time = process_data(_id, _time)
     return jsonify({'img_path':img_path, 'rmspe': 'rmspe = ' + str(rmspe_x), 'y_at_time': 'volatility at time ' + str(_time) + ' is ' + str(y_at_time)})
     
 @app.route('/predict', methods=['GET'])
 def predict():
     if request.method=='GET':
-        stock_id = int(request.args.get('stock_id'))
+        stock_id_idx = int(request.args.get('stock_id'))
+        stock_id = latest_run.data.total_stock_ids[stock_id_idx]
         time_id = int(request.args.get('time_id'))
         img_path, rmspe_x, y_pred, y_at_time = process_data(stock_id, time_id)
         predict_dict = {

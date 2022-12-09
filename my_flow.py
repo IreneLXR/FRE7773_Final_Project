@@ -1,37 +1,33 @@
 """
 
-Simple stand-alone script showing end-to-end training of a regression model using Metaflow. 
+Simple stand-alone script showing end-to-end training of a machine learning model using Metaflow. 
 This script ports the composable script into an explicit dependency graphg (using Metaflow syntax)
-and highlights the advantages of doing so. This script has been created for pedagogical purposes, 
-and it does NOT necessarely reflect all best practices.
-
-Please refer to the slides and our discussion for further context.
-
-MAKE SURE TO RUN THIS WITH METAFLOW LOCAL FIRST
+and highlights the advantages of doing so. 
 
 """
-
-
 from metaflow import FlowSpec, step, Parameter, IncludeFile, current
 from datetime import datetime
 import os
+import glob
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
 from joblib import Parallel, delayed
+from sklearn.neighbors import NearestNeighbors
 
 # make sure we are running locally for this
 assert os.environ.get('METAFLOW_DEFAULT_DATASTORE', 'local') == 'local'
 assert os.environ.get('METAFLOW_DEFAULT_ENVIRONMENT', 'local') == 'local'
-from sklearn.neighbors import NearestNeighbors
+
 def rmspe(y_true, y_pred):
     return np.sqrt(np.mean(np.square((y_true - y_pred) / y_true)))
 def feval_rmspe(preds, train_data):
     labels = train_data.get_label()
     return 'RMSPE', round(rmspe(y_true = labels, y_pred = preds),5), False
+
+# Train NN, make NN features
 class Neighbors:
     def __init__(self, name: str, n_neighbor: int, pivot: pd.DataFrame, X_train: pd.DataFrame):
         self.features = pd.DataFrame()
@@ -68,24 +64,17 @@ class StockNeighbors(Neighbors):
 
 class MyFlow(FlowSpec):
     """
-    MyRegressionFlow is a minimal DAG showcasing reading data from a file 
-    and training a model successfully.
+    MyFlow is used to utilize LightGBM to predict future volatility.
     """
-    
-    # if a static file is part of the flow, 
-    # it can be called in any downstream process,
-    # gets versioned etc.
-    # https://docs.metaflow.org/metaflow/data#data-in-local-files
     """
     DATA_FILE = IncludeFile(
         'dataset',
         help='csv file with the dataset',
-        is_text=True,
-        default='df.csv')
+        default='./df.csv')
+   
     TRAIN_FILE = IncludeFile(
         'dataset_train',
         help='csv file with the dataset',
-        is_text=True,
         default='./data/train.csv')
    """
 
@@ -107,30 +96,33 @@ class MyFlow(FlowSpec):
         """
         Read the data in from the static file
         """
-        from io import StringIO
         # load train file
         self.train = pd.read_csv('./data/train.csv')
-        print(self.train.shape)
         self.stock_ids = list(set(self.train['stock_id']))
+        self.total_stock_ids = self.stock_ids
         self.stock_ids = self.stock_ids[:10]
-        print(self.stock_ids)
         # load preprocessed data file (~30minutes of preprocessing)
         self.df = pd.read_csv('./data/df.csv', index_col=[0])
-        print(self.df.shape)
         self.time_ids = self.df.time_id.factorize()[1]
         self.X_train = self.df.copy()
         self.X_train['target'] = self.train.target
-        # go to the next step
+        print(self.X_train.shape)
         import gc
         gc.collect()
         del self.train
+        # go to the next step
         self.next(self.make_nn_features)
     @step
     def make_nn_features(self):
+        """
+        Process data, making nn features
+        """
+        # make nn features, find similar features of given stock id and time id
         from sklearn.preprocessing import minmax_scale
         time_neighbor = []
         stock_neighbor = []
         pv = self.X_train.copy()
+        # make time neighbors based on volatility, trading volume and return
         pivot = pv.pivot('time_id','stock_id','book_log_return1_realized_volatility')
         pivot = pivot.fillna(pivot.mean())
         pivot = pd.DataFrame(minmax_scale(pivot))
@@ -145,12 +137,13 @@ class MyFlow(FlowSpec):
         pivot = pivot.fillna(pivot.mean())
         pivot = pd.DataFrame(minmax_scale(pivot))
         time_neighbor.append(TimeNeighbors('time_log_return1_mean', 4, pivot, self.X_train))
-
+        
         pivot = pv.pivot('time_id','stock_id','trade_order_count_mean')
         pivot = pivot.fillna(pivot.mean())
         pivot = pd.DataFrame(minmax_scale(pivot))
         time_neighbor.append(TimeNeighbors('time_order_count_mean', 4, pivot, self.X_train))
-
+        
+        # make stock neighbors based on volatility and return
         pivot = pv.pivot('time_id','stock_id','book_log_return1_realized_volatility')
         pivot = pivot.fillna(pivot.mean())
         pivot = pd.DataFrame(minmax_scale(pivot))
@@ -162,8 +155,7 @@ class MyFlow(FlowSpec):
         stock_neighbor.append(StockNeighbors('stock_log_return1_mean', 8, minmax_scale(pivot.T), self.X_train))
 
         self.df_nn = self.X_train.copy()
-        #print("df")
-        #print(self.df['target'])
+        
         methods_stocks = {
             'book_log_return1_realized_volatility': [np.mean, np.min, np.max, np.std],
             'trade_order_count_mean': [np.mean],
@@ -180,10 +172,9 @@ class MyFlow(FlowSpec):
             'book_seconds_in_bucket_count': [np.mean],
         }
         time_n = [2, 3, 5, 10, 20, 40]
-        stock_n = [2,4,6,8,9]
+        stock_n = [20,40,60,80]
         cols = []
         for col in methods_time.keys():
-
             for nn in time_neighbor:
                 nn.make_nn_time(self.df_nn, col)
 
@@ -204,12 +195,6 @@ class MyFlow(FlowSpec):
     
         ndf = pd.concat(cols, axis = 1)
         self.df_nn = pd.concat([self.df_nn, ndf], axis = 1)
-        for i in range(len(self.df_nn.columns)):
-            if self.df_nn.columns[i] == 'target':
-                print("target!!!!!!!!!!!!!!!!!!!!!")
-        print(self.df_nn.columns)
-        print(self.df_nn.shape)
-        print(self.df_nn.shape)
         self.df_nn = self.df_nn.fillna(self.df_nn.mean())
         del pv
         del self.X_train
@@ -217,8 +202,11 @@ class MyFlow(FlowSpec):
 
     @step
     def prepare_train_and_test_dataset(self):
+        """
+        Prepare training and testing dataset
+        """
         from sklearn.model_selection import train_test_split
-
+        # prepare train and test dataset
         fold_bolder = [3830 - 383 * 5, 3830 - 383 * 4,3830 - 383 * 3,3830 - 383 * 2,3830 - 383 * 1,]
         self.fold = []
         self.df_nn = self.df_nn.sort_values(by = ['time_id', 'stock_id'])
@@ -234,116 +222,93 @@ class MyFlow(FlowSpec):
         self.y = self.df_train['target']
         self.X_test = self.df_test[[col for col in self.df_test.columns if col not in ['target','time_id','stock_id','level_0','index']]]
         self.y_test = self.df_test['target']
-        print(self.y.head())
-        
         del self.df_nn
         self.next(self.set_params)
     @step
     def set_params(self):
-        self.params = [{
-            'objective': 'regression',
-            'verbose': 0,
-            'metric': '',
-            'reg_alpha': 5,
-            'reg_lambda': 5,
-            'min_data_in_leaf': 1000,
-            'max_depth': -1,
-            'num_leaves': 128,
-            'colsample_bytree': 0.3,
-            'learning_rate': 0.3
-            },
-            {
+        """
+        Tune hyperparameters
+        """
+        # tune learning rate
+        self.params = [0.01, 0.2, 0.3, 0.5]
+        self.next(self.train_model, foreach='params')
+    @step
+    def train_model(self):
+        """
+        Train a model on the training set
+        """
+        import lightgbm as lgb
+        # perpare hyperparameters
+        self.param = {
             'objective': 'regression',
             'verbose': -1,
             'metric': 'None',
             'reg_alpha': 5,
             'reg_lambda': 5,
             'min_data_in_leaf': 256,
-            'max_depth': 8,
+            'max_depth': 12,
             'num_leaves': 800,
             'colsample_bytree': 0.3,
             'learning_rate': 0.01
-            },
-            {
-            'objective': 'regression',
-            'verbose': 0,
-            'metric': '',
-            'reg_alpha': 5,
-            'reg_lambda': 5,
-            'min_data_in_leaf': 1000,
-            'max_depth': 12,
-            'num_leaves': 300,
-            'colsample_bytree': 0.5,
-            'learning_rate': 0.2
-            },
-            {
-            'objective': 'regression',
-            'verbose': -1,
-            'metric': '',
-            'reg_alpha': 5,
-            'reg_lambda': 5,
-            'min_data_in_leaf': 128,
-            'max_depth': 12,
-            'num_leaves': 1000,
-            'colsample_bytree': 0.2,
-            'learning_rate': 0.1
-            },
-        ]
-        self.next(self.train_model, foreach='params')
-    @step
-    def train_model(self):
-        """
-        Train a regression on the training set
-        """
-        import lightgbm as lgb
-        
-        self.param = self.input
+            }
+        self.param['learning_rate'] = self.input
         print(self.param)
-        self.ds = lgb.Dataset(self.X, self.y, weight = 1/np.power(self.y, 2))
-        
-        from sklearn.model_selection import KFold
-        self.models = []
-        self.model = None
-        self.best_RMSPE = 2**31
-        x_train, x_val = self.X.iloc[self.fold[3][0]], self.X.iloc[self.fold[3][1]]
-        y_train, y_val = self.y.iloc[self.fold[3][0]], self.y.iloc[self.fold[3][1]]
+       
+        # prepare validation dataset
+        self.X_train, self.X_val = self.X.iloc[self.fold[3][0]], self.X.iloc[self.fold[3][1]]
+        self.y_train, self.y_val = self.y.iloc[self.fold[3][0]], self.y.iloc[self.fold[3][1]]
         # Root mean squared percentage error weights
-        train_weights = 1 / np.square(y_train)
-        val_weights = 1 / np.square(y_val)
-        train_dataset = lgb.Dataset(x_train, y_train, weight = train_weights)
-        val_dataset = lgb.Dataset(x_val, y_val, weight = val_weights)
-        model = lgb.train(params = self.param,
+        train_weights = 1 / np.square(self.y_train)
+        val_weights = 1 / np.square(self.y_val)
+        train_dataset = lgb.Dataset(self.X_train, self.y_train, weight = train_weights)
+        val_dataset = lgb.Dataset(self.X_val, self.y_val, weight = val_weights)
+        self.model = lgb.train(params = self.param,
                           num_boost_round=1000,
                           train_set = train_dataset, 
                           valid_sets = [train_dataset, val_dataset], 
-                          verbose_eval = 250,
+                          verbose_eval = 250, 
                           early_stopping_rounds=50,
                           feval = feval_rmspe)
-        # Add predictions to the out of folds array
-        ypred = model.predict(x_val)
-        rmspe_score = rmspe(y_val, ypred)
-        print(f'Our out of folds RMSPE is {rmspe_score}')
-        self.train_val_result = {"RMSPE": rmspe_score, "model": model,"param":self.param, "X_test": self.X_test, "y_test": self.y_test, "df_test": self.df_test}
+        self.next(self.validate_model)
+        
+    @step
+    def validate_model(self):
+        """
+        Validate the model
+        """
+        # validate the model using validation dataset and store the score and parameters
+        ypred = self.model.predict(self.X_val)
+        rmspe_score = rmspe(self.y_val, ypred)
+        self.train_val_result = {"RMSPE": rmspe_score, "model": self.model,"param":self.param, "X_test": self.X_test, "y_test": self.y_test, "df_test": self.df_test, "stock_ids": self.total_stock_ids}
+        self.metrics = {"param":self.param, "RMSPE": rmspe_score}
         self.next(self.join)
 
     @step
     def join(self, inputs):
+        """
+        Join the result, and select hyperparameters that generate the best result
+        """
         self.train_val_results = [input.train_val_result for input in inputs]
+        # select the best model
         self.best_model = min(self.train_val_results, key=lambda train_val_result: train_val_result["RMSPE"])
         self.best_param = self.best_model["param"]
         self.best_lgb_model = self.best_model["model"]
         self.X_test = self.best_model['X_test']
         self.y_test = self.best_model['y_test']
         self.df_test = self.best_model['df_test']
+        self.total_stock_ids = self.best_model['stock_ids']
         self.next(self.test_model)
     @step 
     def test_model(self):
         """
         Test the model on the hold out sample
         """
+        # use RMSPE to examine performance
         self.df_test_group_by_stock = self.df_test.groupby('stock_id')
         self.y_pred = self.best_lgb_model.predict(self.X_test, num_iteration=self.best_lgb_model.best_iteration)
-        print(f"# RMSPE: {np.sqrt(np.mean(np.square((self.y_test - self.y_pred) / self.y_test)))}")                    
+        self.best_model_rmspe = rmspe(self.y_test, self.y_pred)
+        print(f"# RMSPE: {self.best_model_rmspe}")   
+        self.metrics = {"param": self.best_param, "RMSPE": self.best_model_rmspe}
         self.next(self.end)
 
     @step
@@ -353,5 +318,4 @@ class MyFlow(FlowSpec):
 
 
 if __name__ == '__main__':
-    print("enter flow")
     MyFlow()
