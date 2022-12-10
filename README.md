@@ -34,11 +34,17 @@ python3 app.py run
 ```
 * Run model_selection.ipynb to get the overview of the pipeline of the project
 
+
+
+## Deployment
+* The project was deployed on AWS, as shown below:
+<img width="973" alt="p1" src="https://user-images.githubusercontent.com/46698580/206819611-9375f8c3-9685-4285-a6eb-79e427eca3c5.png">
+<img width="618" alt="p2" src="https://user-images.githubusercontent.com/46698580/206819747-44996e60-7e1f-4399-88c7-ec646207d1f2.png">
+
 ## Authors
 
 Helen Zhang [@HelenZhang00](https://github.com/HelenZhang00)  
 Layla Li [@IreneLXR](https://github.com/IreneLXR)  
 Yu Gu [@guyuuuuu](https://github.com/guyuuuuu)
 
-## Acknowledgments
 
