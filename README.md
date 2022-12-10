@@ -14,7 +14,7 @@ Volatility describes fluctuations in prices of securities in the financial marke
 
 * Whole project can be accessed at https://github.com/IreneLXR/FRE7773_Final_Project
 * Raw data from kaggle can be downloaded at https://www.kaggle.com/competitions/optiver-realized-volatility-prediction/data
-* Download engineered data at ______, put the data in to /data folder
+* Download engineered data at https://drive.google.com/drive/folders/1BfBEnrOOaogj4QfyX-D4X_VtkLCrzHHN, put the data in to /data folder
 
 ### Executing Project
 
@@ -22,6 +22,8 @@ Volatility describes fluctuations in prices of securities in the financial marke
 ```
 pip install -r requirements.txt
 ```
+* Put the engineered and raw data under the ./data folder
+
 * Run my_flow.py under the right directory to generate the metadata folder
 ```
 python3 my_flow.py run

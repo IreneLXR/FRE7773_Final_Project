@@ -7,4 +7,5 @@ data/train.csv
 
 #metaflow file
 .metaflow
+static
 *.json
