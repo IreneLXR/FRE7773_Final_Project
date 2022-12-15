@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from flask import jsonify
 import os
 import pickle
+from datetime import datetime
 #### THIS IS GLOBAL, SO OBJECTS LIKE THE MODEL CAN BE RE-USED ACROSS REQUESTS ####
 
 FLOW_NAME = 'MyFlow' # name of the target class that generated the model
@@ -95,14 +96,15 @@ def predict():
         stock_id = latest_run.data.total_stock_ids[stock_id_idx]
         time_id = int(request.args.get('time_id'))
         img_path, rmspe_x, y_pred, y_at_time = process_data(stock_id, time_id)
+        time = datetime.now()
         predict_dict = {
             "data": {
                 "prediction_of_volatility_at_time=" + str(time_id):y_at_time,
                 "predictions_of_volatility_for_whole_period":[y_pred.tolist()]
             },
             "metadata": {
-                "serverTimeStamp": latest_run.finished_at.timestamp(),
-                "time": latest_run.finished_at
+                "serverTimeStamp": time.timestamp(),
+                "time": time
                 }
         }
         response = jsonify(predict_dict)
