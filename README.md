@@ -34,6 +34,9 @@ python3 app.py run
 ```
 * Run model_selection.ipynb to get the overview of the pipeline of the project
 
+## Tracking Result
+* Comet tracking result:
+![IMG_7556](https://user-images.githubusercontent.com/46698580/207930098-a59fcb58-4553-413d-a5e2-7ab77446cd7e.jpg)
 
 
 ## Deployment
